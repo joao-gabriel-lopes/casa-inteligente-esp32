@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View } from 'react-native';
 import { Button } from 'react-native-paper';
+import React from 'react';
+import * as Speech from 'expo-speech';
 import styles from './styles';
 
 const ESP32_IP = "10.90.43.11";
@@ -39,34 +41,67 @@ export default function Home() {
     };
   }
 
+  function FalarTexto(texto: string) {
+    Speech.speak(texto, {
+      language: 'pt-BR',
+      volume: 0.5
+    });
+  };
+
   function EnviarDados(dados: IControlador) {
     if (status == 'conectado') {
-    if (dados.led1 !== undefined && dados.led2 !== undefined) {
-      if (dados.led1 !== dados.led2) {
-        ws.send(JSON.stringify({ led1: false, led2: false }));
-        setDados(prevDados => ({ ...prevDados, led1: false, led2: false }));
+      if (dados.led1 !== undefined && dados.led2 !== undefined) {
+        if (dados.led1 !== dados.led2) {
+          ws.send(JSON.stringify({ led1: false, led2: false }));
+          setDados(prevDados => ({ ...prevDados, led1: false, led2: false }));
+          FalarTexto("Desligar as duas luzes");
+        } else {
+          ws.send(JSON.stringify({ led1: dados.led1, led2: dados.led2 }));
+          setDados(prevDados => ({ ...prevDados, led1: !dados.led1, led2: !dados.led2 }));
+          if (dados.led1 == false && dados.led2 == false) {
+            FalarTexto("Ligar as duas luzes")
+          } else {
+            FalarTexto("Desligar as duas luzes")
+          }
+        }
       } else {
-        ws.send(JSON.stringify({ led1: dados.led1, led2: dados.led2 }));
-        setDados(prevDados => ({ ...prevDados, led1: !dados.led1, led2: !dados.led2 }));
+        if (dados.led1 !== undefined) {
+          ws.send(JSON.stringify({ led1: dados.led1 }));
+          setDados(prevDados => ({ ...prevDados, led1: !dados.led1 }));
+          if (dados.led1 == false) {
+            FalarTexto("Ligar luz do ambiente")
+          } else {
+            FalarTexto("Desligar luz do ambiente")
+          }
+        }
+        if (dados.led2 !== undefined) {
+          ws.send(JSON.stringify({ led2: dados.led2 }));
+          setDados(prevDados => ({ ...prevDados, led2: !dados.led2 }));
+          if (dados.led2 == false) {
+            FalarTexto("Ligar a luz do quintal")
+          } else {
+            FalarTexto("Desligar a luz do quintal")
+          }
+        }
       }
-    } else {
-      if (dados.led1 !== undefined) {
-        ws.send(JSON.stringify({ led1: dados.led1 }));
-        setDados(prevDados => ({ ...prevDados, led1: !dados.led1 }));
+      if (dados.servoporta !== undefined) {
+        ws.send(JSON.stringify({ servoporta: dados.servoporta }));
+        setDados(prevDados => ({ ...prevDados, servoporta: (dados.servoporta === 0 ? 90 : 0) }));
+        if (dados.servoporta == 0) {
+          FalarTexto("Abrir porta")
+        } else {
+          FalarTexto("Fechar porta")
+        }
       }
-      if (dados.led2 !== undefined) {
-        ws.send(JSON.stringify({ led2: dados.led2 }));
-        setDados(prevDados => ({ ...prevDados, led2: !dados.led2 }));
+      if (dados.servojanela !== undefined) {
+        ws.send(JSON.stringify({ servojanela: dados.servojanela }));
+        setDados(prevDados => ({ ...prevDados, servojanela: (dados.servojanela === 0 ? 90 : 0) }));
+        if (dados.servojanela == 0) {
+          FalarTexto("Abrir janela")
+        } else {
+          FalarTexto("Fechar janela")
+        }
       }
-    }
-    if (dados.servoporta !== undefined) {
-      ws.send(JSON.stringify({ servoporta: dados.servoporta }));
-      setDados(prevDados => ({ ...prevDados, servoporta: (dados.servoporta === 0 ? 90 : 0) }));
-    }
-    if (dados.servojanela !== undefined) {
-      ws.send(JSON.stringify({ servojanela: dados.servojanela }));
-      setDados(prevDados => ({ ...prevDados, servojanela: (dados.servojanela === 0 ? 90 : 0) }));
-    }
     } else {
       console.log("WebSocket não está conectado. Não é possível enviar dados.");
     }
